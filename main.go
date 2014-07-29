@@ -15,78 +15,92 @@ import (
 
 // Returns true if path is a directory otherwise false
 func isDirectory(path string) bool {
+
   file, err := os.Open(path)
   if err != nil {
     fmt.Println(err)
     return false
   }
   defer file.Close()
+
   fi, err := file.Stat()
   if err != nil {
     fmt.Println(err)
     return false
   }
+
   return (fi.Mode()).IsDir()
+}
+
+// id is passed to identify the thread in the println statements
+func searchAndLog(file string, dirpath chan string, id int) {
+  // For loop ensures that thread keeps on running as long as
+  // main thread is runnign
+  for {
+    directory := <- dirpath
+    files, _ := ioutil.ReadDir(directory)
+    for _, f := range files {
+      // Replace ".DS_Store" with something else to search for
+      // other file
+      if f.Name() == file {
+        // fmt.Println("Thread # ", id + 1, directory, f.Size())
+      }
+    }
+  }
 }
 
 func main() {
 
   // Command line flag to pass in how many threads to swapn
-  var numThreads int
-  flag.IntVar(&numThreads, "t", 5, "number of threads")
+  var numThreads  int
+  var directory   string
+  var file        string
+
+  flag.StringVar(&file, "f", "", "file to search for")
+  flag.IntVar(&numThreads, "t", 3, "number of threads")
+  flag.StringVar(&directory, "d", "", "directory to scan")
+
   flag.Parse()
-  fmt.Println("numThreads: ", numThreads)
+
+  if file == "" {
+    fmt.Println("-f flag is required")
+    os.Exit(2)
+  }
+
+  if directory == "" {
+    fmt.Println("-d flag is required")
+    os.Exit(2)
+  }
 
   // 5 Channels for 5 threads
   var dir [5]chan string
-  for i, _ := range dir {
+  for i := 0; i < numThreads; i++ {
     dir[i] = make(chan string)
   }
 
   // This is the function that will be passed to filepath.Walk()
   // "select" will be executed only if path points to directory
   walkFunc := func(path string, info os.FileInfo, err error) error {
-    fmt.Println("Visited: ", path)
     if isDirectory(path) {
       select {
         case dir[0] <- path:
-          fmt.Println("Thread: 1")
         case dir[1] <- path:
-          fmt.Println("Thread: 2")
         case dir[2] <- path:
-          fmt.Println("Thread: 3")
         case dir[3] <- path:
-          fmt.Println("Thread: 4")
         case dir[4] <- path:
-          fmt.Println("Thread: 5")
         }
     }
     return nil
   }
 
-  // Create 5 threads of searchAndLog()
+  // Create numThreads threads of searchAndLog()
   for i := 0; i < numThreads; i++ {
-    go func(i int) {
-      for {
-        searchAndLog(dir[i], i)
-      }
-    }(i)
+    go searchAndLog(file, dir[i], i)
+
   }
 
-  go filepath.Walk("/Users/nikhil/Workspace/Test", walkFunc)
+  go filepath.Walk(directory, walkFunc)
 
   var input string
   fmt.Scanln(&input)
-}
-
-// id is passed to identify the thread in the println statements
-func searchAndLog(dirpath chan string, id int) {
-  directory := <- dirpath
-  files, _ := ioutil.ReadDir(directory)
-  for _, f := range files {
-    if f.Name() == ".DS_Store" {
-      fmt.Println("########################")
-      fmt.Println("Thread # ", id + 1, directory, f.Size())
-    }
-  }
 }
