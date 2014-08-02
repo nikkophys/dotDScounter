@@ -6,69 +6,70 @@ package main
 // size
 
 import (
-  "fmt"
-  "os"
-  "flag"
-  "path/filepath"
-  "runtime"
+    "fmt"
+    "os"
+    "flag"
+    "path/filepath"
+    "runtime"
 )
 
 func main() {
 
-  // Command line flag to pass in how many goRouts to swapn
-  var numGoRout  int
-  var directory   string
-  var file        string
+    // Command line flag to pass in how many goRouts to swapn
+    var numGoRout  int
+    var directory   string
+    var file        string
 
-  flag.StringVar(&file, "f", "", "file to search for")
-  flag.IntVar(&numGoRout, "t", 3, "number of goRoutines")
-  flag.StringVar(&directory, "d", "", "directory to scan")
+    flag.StringVar(&file, "f", "", "file to search for")
+    flag.IntVar(&numGoRout, "t", 3, "number of goRoutines")
+    flag.StringVar(&directory, "d", "", "directory to scan")
 
-  flag.Parse()
+    flag.Parse()
 
-  runtime.GOMAXPROCS(numGoRout)
+    runtime.GOMAXPROCS(numGoRout)
 
-  if file == "" {
-    fmt.Println("-f flag is required")
-    os.Exit(2)
-  }
-
-  if directory == "" {
-    fmt.Println("-d flag is required")
-    os.Exit(2)
-  }
-
-
-  // Set buffer length to 5 so that directory walker function does not to
-  // wait for goRoutines to accept directory
-  dirs := make(chan string, 5)
-
-  // Using this channel goRoutines will communicate back to main thread
-  // when they are about to exit
-  var goRoutTermId = make(chan int)
-
-  // This is the function that will be passed to filepath.Walk()
-  // "select" will be executed only if path points to directory
-  walkFunc := func(path string, info os.FileInfo, err error) error {
-    if isDirectory(path) {
-      dirs <- path
+    if file == "" {
+        fmt.Println("-f flag is required")
+        os.Exit(2)
     }
-    return nil
-  }
 
-  // Create numGoRout goRoutines of searchAndLog()
-  for i := 0; i < numGoRout; i++ {
-    go searchAndLog(file, dirs, goRoutTermId, i+1)
+    if directory == "" {
+        fmt.Println("-d flag is required")
+        os.Exit(2)
+    }
 
-  }
 
-  filepath.Walk(directory, walkFunc)
+    // Set buffer length to 5 so that directory walker function does not to
+    // wait for goRoutines to accept directory
+    dirs := make(chan string, 5)
 
-  // Close channels so that goRoutines can terminate themselves
-  close(dirs)
+    // Using this channel goRoutines will communicate back to main thread
+    // when they are about to exit
+    var goRoutTermId = make(chan int)
 
-  // Wait for all goRoutines to be terminated before ending main
-  for i := 0; i < numGoRout; i++ {
-    _ = <- goRoutTermId
-  }
+    // This is the function that will be passed to filepath.Walk()
+    // "select" will be executed only if path points to directory
+    walkFunc := func(path string, info os.FileInfo, err error) error {
+        if isDirectory(path) {
+            dirs <- path
+        }
+        return nil
+    }
+
+    // Create numGoRout goRoutines of searchAndLog()
+    for i := 0; i < numGoRout; i++ {
+        go searchAndLog(file, dirs, goRoutTermId, i+1)
+
+    }
+
+    filepath.Walk(directory, walkFunc)
+
+    // Close channels so that goRoutines can terminate themselves
+    close(dirs)
+
+    // Wait for all goRoutines to be terminated before ending main
+    for i := 0; i < numGoRout; i++ {
+
+        _ = <- goRoutTermId
+    }
 }
