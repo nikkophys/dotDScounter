@@ -7,10 +7,11 @@ import (
 )
 
 // id is passed to identify the goRoutine in the println statements
-func searchAndLog(file        string,
-                  dirpath     chan string,
-                  goRoutTermId  chan int,
-                  id          int) {
+func searchAndLog (file          string,
+                    dirpath       <-chan string,
+                    goRoutTermId  chan<- int,
+                    id            int) {
+
   // For loop ensures that this goRoutine keeps on running as long as
   // main goRoutine is runnign
   for {
