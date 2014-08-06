@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 // id is passed to identify the goRoutine in the println statements
 func searchAndLog(
 	file string,
 	dirpath <-chan string,
-	goRoutTermId chan<- int,
-	id int) {
+	wg *sync.WaitGroup, id int) {
 
+	defer wg.Done()
 	// For loop ensures that this goRoutine keeps on running as long as
 	// main goRoutine is runnign
 	for {
 		directory, ok := <-dirpath
 		if !ok {
-			goRoutTermId <- id
 			return
 		}
 		files, _ := ioutil.ReadDir(directory)
