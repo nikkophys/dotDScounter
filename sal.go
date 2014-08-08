@@ -25,11 +25,8 @@ func searchAndLog(
 
 	// For loop ensures that this goRoutine keeps on running as long as
 	// main goRoutine is runnign
-	for {
-		directory, ok := <-dirpath
-		if !ok {
-			return
-		}
+	for directory := range dirpath {
+
 		files, _ := ioutil.ReadDir(directory)
 		for _, f := range files {
 			// Replace ".DS_Store" with something else to search for

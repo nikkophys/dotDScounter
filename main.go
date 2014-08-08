@@ -68,20 +68,20 @@ func main() {
 
 	go func(il <-chan dsDetails) {
 		defer wg.Done()
+
 		var totalSize int64 = 0
         var totalFiles int = 0
-		for {
-			d, ok := <-il
-			if !ok {
-				dsLogger.Println("Total Size: ",
-					float64(totalSize)/1024.0, "Kb")
-                dsLogger.Println("Total Number of Files: ", totalFiles)
-				return
-			}
+
+		for d := range il {
             totalFiles += 1
 			totalSize += d.size
 			dsLogger.Println(d.info)
 		}
+
+		defer dsLogger.Println("Total Number of Files: ", totalFiles)
+		tsize := float64(int((float64(totalSize)/1024.0) * 100)) / 100
+		defer dsLogger.Println("Total Size: ", tsize, "Kb")
+
 	}(infoLog)
 	wg.Add(1)
 
