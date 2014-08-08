@@ -70,16 +70,16 @@ func main() {
 		defer wg.Done()
 
 		var totalSize int64 = 0
-        var totalFiles int = 0
+		var totalFiles int = 0
 
 		for d := range il {
-            totalFiles += 1
+			totalFiles += 1
 			totalSize += d.size
 			dsLogger.Println(d.info)
 		}
 
 		defer dsLogger.Println("Total Number of Files: ", totalFiles)
-		tsize := float64(int((float64(totalSize)/1024.0) * 100)) / 100
+		tsize := float64(int((float64(totalSize)/1024.0)*100)) / 100
 		defer dsLogger.Println("Total Size: ", tsize, "Kb")
 
 	}(infoLog)
